@@ -18,7 +18,7 @@ export '/src/exceptions/logto_auth_exceptions.dart';
 export '/src/interfaces/logto_interfaces.dart';
 export '/src/utilities/constants.dart';
 
-enum BrowserLaunchMode { platformDefault, external }
+enum BrowserLaunchMode { platformDefault, external, appwebview }
 
 class LogtoLinksClient {
   final LogtoConfig config;
@@ -223,6 +223,7 @@ class LogtoLinksClient {
     List<IdentifierType>? identifiers,
     Map<String, String>? extraParams,
     int maxAge = 10 * 6000,
+    BrowserLaunchMode? launchMode,
   }) async {
     var now = DateTime.now().millisecondsSinceEpoch;
     if (_loading && now - _lastSignInTime < maxAge) {
@@ -257,18 +258,7 @@ class LogtoLinksClient {
         extraParams: extraParams,
       );
 
-      // final redirectUriScheme = Uri.parse(redirectUri).scheme;
-
-      final url = Uri.parse(signInUri.toString());
-
-      final LaunchMode launchMode =
-          _launchMode == BrowserLaunchMode.platformDefault
-              ? LaunchMode.platformDefault
-              : LaunchMode.externalApplication;
-
-      if (!await launchUrl(url, mode: launchMode)) {
-        throw Exception('Could not launch ${url.toString()}');
-      }
+      await launchBrowser(signInUri.toString(), launchMode: launchMode);
     } finally {
       _loading = false;
       if (_httpClient == null) httpClient.close();
@@ -315,7 +305,10 @@ class LogtoLinksClient {
   }
 
   // Sign out the user.
-  Future<void> signOut({String? redirectUri}) async {
+  Future<void> signOut({
+    String? redirectUri,
+    BrowserLaunchMode? launchMode,
+  }) async {
     // Throw error is authentication status not found
     final idToken = await _tokenStorage.idToken;
 
@@ -360,13 +353,7 @@ class LogtoLinksClient {
               redirectUri != null ? Uri.parse(redirectUri) : null,
         );
 
-        // Execute the sign-out flow asynchronously, this should not block the main app to render the UI.
-        final LaunchMode launchMode =
-            _launchMode == BrowserLaunchMode.platformDefault
-                ? LaunchMode.platformDefault
-                : LaunchMode.externalApplication;
-
-        await launchUrl(Uri.parse(signOutUri.toString()), mode: launchMode);
+        await launchBrowser(signOutUri.toString(), launchMode: launchMode);
       }
     } finally {
       if (_httpClient == null) {
@@ -400,6 +387,23 @@ class LogtoLinksClient {
       return userInfoResponse;
     } finally {
       if (_httpClient == null) httpClient.close();
+    }
+  }
+
+  Future<void> launchBrowser(
+    String url, {
+    BrowserLaunchMode? launchMode,
+  }) async {
+    final BrowserLaunchMode configLaunchMode = launchMode ?? _launchMode;
+
+    final LaunchMode libLaunchMode = switch (configLaunchMode) {
+      BrowserLaunchMode.platformDefault => LaunchMode.platformDefault,
+      BrowserLaunchMode.external => LaunchMode.externalApplication,
+      BrowserLaunchMode.appwebview => LaunchMode.inAppWebView,
+    };
+
+    if (!await launchUrl(Uri.parse(url), mode: libLaunchMode)) {
+      throw Exception('Could not launch ${url.toString()}');
     }
   }
 }

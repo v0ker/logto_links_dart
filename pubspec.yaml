@@ -1,6 +1,6 @@
 name: logto_links_dart
 description: Third party Logto's Flutter SDK packages, based on the original logto_dart_sdk.
-version: 3.0.0
+version: 3.0.1
 homepage: https://github.com/v0ker/logto_links_dart
 documentation: https://docs.logto.io/sdk/flutter/
 

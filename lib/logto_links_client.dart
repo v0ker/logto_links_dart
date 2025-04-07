@@ -25,7 +25,6 @@ class LogtoLinksClient {
 
   late PKCE _pkce;
   late String _state;
-  bool _stateInitialized = false;
 
   static late TokenStorage _tokenStorage;
 
@@ -241,7 +240,6 @@ class LogtoLinksClient {
       _lastSignInTime = now;
       _pkce = PKCE.generate();
       _state = utils.generateRandomString();
-      _stateInitialized = true;
 
       _tokenStorage.setIdToken(null);
       final oidcConfig = await _getOidcConfig(httpClient);

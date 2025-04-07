@@ -18,13 +18,14 @@ export '/src/exceptions/logto_auth_exceptions.dart';
 export '/src/interfaces/logto_interfaces.dart';
 export '/src/utilities/constants.dart';
 
-enum BrowserLaunchMode { platformDefault, external, appwebview }
+enum BrowserLaunchMode { platformDefault, external }
 
 class LogtoLinksClient {
   final LogtoConfig config;
 
   late PKCE _pkce;
   late String _state;
+  bool _stateInitialized = false;
 
   static late TokenStorage _tokenStorage;
 
@@ -240,6 +241,8 @@ class LogtoLinksClient {
       _lastSignInTime = now;
       _pkce = PKCE.generate();
       _state = utils.generateRandomString();
+      _stateInitialized = true;
+
       _tokenStorage.setIdToken(null);
       final oidcConfig = await _getOidcConfig(httpClient);
 
@@ -274,10 +277,17 @@ class LogtoLinksClient {
       );
     }
 
+    var queryParams = Uri.parse(callbackUri).queryParameters;
+    var state = queryParams['state'] ?? "";
+
+    if (_stateInitialized) {
+      state = _state;
+    }
+
     final code = logto_core.verifyAndParseCodeFromCallbackUri(
       callbackUri,
       redirectUri,
-      _state,
+      state,
     );
 
     final oidcConfig = await _getOidcConfig(_httpClient!);
@@ -399,7 +409,6 @@ class LogtoLinksClient {
     final LaunchMode libLaunchMode = switch (configLaunchMode) {
       BrowserLaunchMode.platformDefault => LaunchMode.platformDefault,
       BrowserLaunchMode.external => LaunchMode.externalApplication,
-      BrowserLaunchMode.appwebview => LaunchMode.inAppWebView,
     };
 
     if (!await launchUrl(Uri.parse(url), mode: libLaunchMode)) {

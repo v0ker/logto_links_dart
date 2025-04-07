@@ -277,19 +277,10 @@ class LogtoLinksClient {
       );
     }
 
-    var queryParams = Uri.parse(callbackUri).queryParameters;
-    var state = queryParams['state'] ?? "";
-    print("use query state");
-
-    if (_stateInitialized) {
-      state = _state;
-      print("use memory state");
-    }
-
     final code = logto_core.verifyAndParseCodeFromCallbackUri(
       callbackUri,
       redirectUri,
-      state,
+      _state,
     );
 
     final oidcConfig = await _getOidcConfig(_httpClient!);
